@@ -9,6 +9,8 @@ using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Configuration;
 using Microsoft.Extensions.Configuration;
+using Server_Status.Model;
+using Server_Status.Utility;
 
 namespace Server_Status
 {
@@ -29,14 +31,11 @@ namespace Server_Status
                 string webhook = game.GetSection( "WebhookURL" ).Value;
                 string saveGameSlot = game.GetSection( "SaveGame" ).Value;
 
-                string currentDay = "";
+                int currentDay = 0;
                 string currentTime = "";
                 string currentWeather = "";
                 string mapName = "";
                 string currentSeason = "";
-                string seasonsForcast = "";
-
-                double dayTimeInMinutes = 0;
 
                 var ftp = new FTPFiles();
                 ftp.username = game.GetSection( "FTP:UserName" ).Value;
@@ -46,66 +45,56 @@ namespace Server_Status
 
                 // Get Enviornment Details
 
-                var enviornment = ftp.GetFile( Path.Combine( saveGameSlot, FileNames.Environment ) );
+                var enviornment = ftp.GetFile<environment>( saveGameSlot );
 
-                if ( !string.IsNullOrEmpty( enviornment.InnerXml ) )
+                if ( enviornment != null )
                 {
-                    currentDay = enviornment.SelectSingleNode( "/environment/currentDay" ).InnerText;
+                    currentDay = enviornment.currentDay;
+                    currentTime = TimeSpan.FromMinutes( (double)enviornment.dayTime ).AsDiscordEmote();
 
-                    if ( double.TryParse( enviornment.SelectSingleNode( "/environment/dayTime" ).InnerText, out dayTimeInMinutes ) )
+                    if( enviornment.weather != null )
                     {
-                        currentTime = TimeSpan.FromMinutes( dayTimeInMinutes ).AsDiscordEmote();
-                    }
-                    var forcastNode = enviornment.SelectSingleNode( "/environment/weather/forecast" );
-                    if ( forcastNode != null )
-                    {
-                        currentWeather = GetWeatherEmote( forcastNode.FirstChild.Attributes["typeName"].Value );
+                        currentWeather = Helper.GetWeatherEmote( enviornment.weather.forecast.FirstOrDefault().typeName );
                     }
                 }
 
-                var saveGame = ftp.GetFile( Path.Combine( saveGameSlot, FileNames.SaveGame ) );
+                var saveGame = ftp.GetFile<careerSavegame>(  saveGameSlot );
 
-                if ( !string.IsNullOrEmpty( saveGame.InnerXml ) )
+                if ( saveGame != null )
                 {
-                    mapName = saveGame.SelectSingleNode( "/careerSavegame/settings/mapTitle" ).InnerText;
+                    mapName = saveGame.settings.mapTitle;
                 }
 
-                var seasons = ftp.GetFile( Path.Combine( saveGameSlot, FileNames.Seasons ) );
+                var seasons = ftp.GetFile<seasons>( saveGameSlot );
 
-                if ( !string.IsNullOrEmpty( seasons.InnerXml ) )
+                if ( seasons != null )
                 {
-                    var daysPerSeason = int.Parse( seasons.SelectSingleNode( "/seasons/environment/daysPerSeason" ).InnerText );
+                    seasons.CurrentDay = currentDay;
+                    
+                    var daysPerSeason = seasons.environment.daysPerSeason;
 
-                    currentSeason = GetCurrentSeason( int.Parse( currentDay ), daysPerSeason );
+                    currentSeason = seasons.ToString();
 
-                    var solTempMax = seasons.SelectSingleNode( "/seasons/weather/soilTemp" ).InnerText;
-                    var weatherEvents = seasons.SelectSingleNode( "/seasons/weather/events" );
-                    foreach ( XmlNode weatherEvent in weatherEvents.ChildNodes )
-                    {
-                        double startTime;
-                        if ( double.TryParse( weatherEvent.Attributes["startTime"].Value, out startTime ) )
-                        {
-                            double endTime;
-                            if ( double.TryParse( weatherEvent.Attributes["endTime"].Value, out endTime ) )
-                            {
-                                if ( dayTimeInMinutes == 0 ||
-                                    ( dayTimeInMinutes >= startTime * 60
-                                    && dayTimeInMinutes < endTime * 60 ) )
-                                {
-                                    currentWeather = GetWeatherEmote( weatherEvent.Attributes["weatherType"].Value, true );
-                                    break;
-                                }
-                            }
-                        }
-                    }
+                    var solTempMax = seasons.weather.soilTemp;
+
+                    var currentWeatherEvent = seasons.weather.events.Where( x => x.startDay == currentDay
+                                                                                && x.startTime * 60 < enviornment.dayTime
+                                                                                && x.endTime * 60 >= enviornment.dayTime )
+                                                                    .FirstOrDefault();
+ 
+                    currentWeather = Helper.GetWeatherEmote( currentWeatherEvent.weatherType.ToString(), true );
+                           
                 }
 
                 var dcRequest = WebRequest.Create( webhook );
                 dcRequest.ContentType = "application/json";
                 dcRequest.Method = "Post";
                 var fields = new List<Field>();
-                fields.Add( new Field() { name = "Game", value = mapName, inline = false } );
-
+                
+                if( mapName != null )
+                {
+                    fields.Add( new Field() { name = "Game", value = mapName, inline = false } );
+                }
                 if ( !string.IsNullOrEmpty( currentWeather ) )
                 {
                     fields.Add( new Field() { name = "Weather", value = currentWeather, inline = true } );
@@ -142,124 +131,36 @@ namespace Server_Status
                 }
             }
         }
-        private static string GetWeatherEmote( string weather, bool seasons=false )
+
+        private static string GetForcastEmote( string forecast )
         {
-            if( seasons )
-            {
-                switch ( weather )
-                {
-                    case "1":
-                        return ":cloud:";
-                    case "0":
-                        return ":sunny:";
-                    case "2":
-                        return ":partly_sunny:";
-                }
-            }
-            else
-            {
-                switch ( weather )
-                {
-                    case "SUN":
-                        return ":sunny:";
-                    case "RAIN":
-                        return ":cloud_rain:";
-                    case "CLOUDY":
-                        return ":cloud:";
-                }
-            }
-
-            return weather;
-        }
-
-        private static string GetCurrentSeason( int currentDay, int daysPerSeason )
-        {
-            var daysPerYear = daysPerSeason * 4;
-            var currentYear = currentDay / daysPerYear;
-            var currentDayOfYear = currentDay - ( daysPerYear * ( currentYear ) );
-            var currentSeasonValue = currentDayOfYear / daysPerSeason;
-;
-            var dayOfSeason = currentDayOfYear % daysPerSeason;
-
-            var partOfSeason = ( double ) dayOfSeason / 3.00;
-
-            string partOfSeasonWord = "";
-
-            if( partOfSeason < .35 )
-            {
-                partOfSeasonWord = "Early";
-            }
-            else if ( partOfSeason < .68 )
-            {
-                partOfSeasonWord = "Mid";
-            }
-            else
-            {
-                partOfSeasonWord = "Late";
-            }
-
-            return string.Format( "{0} {1:00}/{3} {2}", GetSeasonsEmote( currentSeasonValue.ToString() ), dayOfSeason, GetSeasonName( currentSeasonValue ), partOfSeasonWord );
-        }
-        private static string GetSeasonName( int season )
-        {
-            switch ( season )
-            {
-                case 0:
-                    return "Spring";
-                case 1:
-                    return "Summer";
-                case 2:
-                    return "Autumn";
-                case 4:
-                    return "Winter";
-
-            }
-            return season.ToString();
-        }
-
-        private static string GetSeasonsEmote( string season )
-        {
-            switch ( season )
+            switch ( forecast )
             {
                 case "0":
-                    return ":sunflower:";
-                case "1":
                     return ":sunny:";
+                case "1":
+                    return ":partly_sunny:";
                 case "2":
-                    return ":fallen_leaf:";
+                    return ":cloud_snow:";
                 case "3":
-                    return ":snowflake:";
+                    return ":white_sun_rain_cloud:";
+                case "4":
+                    return ":fog:";
+                case "5":
+                    return ":cloud:";
+                case "6":
+                    return ":thunder_cloud_rain:";
+                case "7":
+                    return ":cloud_snow:";
+                case "8":
+                    return ":fog:";
+                case "9":
+                    return ":thunder_cloud_rain:";
+                case "10":
+                    return ":thunder_cloud_rain:";
             }
-            return season;
+            return forecast;
         }
     }
-    static class FileNames
-    {
-        public const string Environment = "environment.xml";
-        public const string SaveGame = "careerSavegame.xml";
-        public const string Seasons = "seasons.xml";
-    }
 
-    public static class TimeSpanExtensions
-    {
-        public static TimeSpan RoundToNearestMinutes( this TimeSpan input, int minutes )
-        {
-            var totalMinutes = ( int ) ( input + new TimeSpan( 0, minutes / 2, 0 ) ).TotalMinutes;
-
-            return new TimeSpan( 0, totalMinutes - totalMinutes % minutes, 0 );
-        }
-
-        public static string AsDiscordEmote( this TimeSpan input )
-        {
-            var hours = input.RoundToNearestMinutes( 30 ).Hours;
-            var minutes = input.RoundToNearestMinutes( 30 ).Minutes;
-            if ( hours == 0 )
-                hours = 12;
-            else if ( hours > 12 )
-            {
-                hours -= 12;
-            }
-            return string.Format( ":clock{2}{3:#}: {0}:{1:00}", input.Hours, input.Minutes, hours, minutes );
-        }
-    }
 }
