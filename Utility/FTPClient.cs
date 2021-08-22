@@ -9,7 +9,7 @@ using Server_Status.Model;
 
 namespace Server_Status.Utility
 {
-    class FTPFiles
+    class FTPClient
     {
         public string username { get; set; }
         public string password { get; set; }
