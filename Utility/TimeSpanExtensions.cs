@@ -13,6 +13,11 @@ namespace Server_Status.Utility
             return new TimeSpan( 0, totalMinutes - totalMinutes % minutes, 0 );
         }
 
+        public static TimeSpan RoundToNearestHours( this TimeSpan input, int hours )
+        {
+            return input.RoundToNearestMinutes( 60 * hours );
+        }
+
         public static string AsDiscordEmote( this TimeSpan input )
         {
             var hours = input.RoundToNearestMinutes( 30 ).Hours;

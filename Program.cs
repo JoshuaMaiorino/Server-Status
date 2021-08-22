@@ -11,6 +11,7 @@ using System.Configuration;
 using Microsoft.Extensions.Configuration;
 using Server_Status.Model;
 using Server_Status.Utility;
+using System.Text;
 
 namespace Server_Status
 {
@@ -36,6 +37,7 @@ namespace Server_Status
                 string currentWeather = "";
                 string mapName = "";
                 string currentSeason = "";
+                List<KeyValuePair<string, string>> forecast = null;
 
                 var ftp = new FTPFiles();
                 ftp.username = game.GetSection( "FTP:UserName" ).Value;
@@ -65,24 +67,23 @@ namespace Server_Status
                     mapName = saveGame.settings.mapTitle;
                 }
 
-                var seasons = ftp.GetFile<seasons>( saveGameSlot );
+                var seasonData = ftp.GetFile<seasons>( saveGameSlot );
 
-                if ( seasons != null )
+                if ( seasonData != null )
                 {
-                    seasons.CurrentDay = currentDay;
-                    
-                    var daysPerSeason = seasons.environment.daysPerSeason;
+                    seasonData.CurrentDay = currentDay;
+                    currentSeason = seasonData.ToString();
 
-                    currentSeason = seasons.ToString();
+                    forecast = seasonData.Forecast;
 
-                    var solTempMax = seasons.weather.soilTemp;
-
-                    var currentWeatherEvent = seasons.weather.events.Where( x => x.startDay == currentDay
+                    var currentWeatherEvent = seasonData.weather.events.Where( x => x.startDay == currentDay
                                                                                 && x.startTime * 60 < enviornment.dayTime
                                                                                 && x.endTime * 60 >= enviornment.dayTime )
                                                                     .FirstOrDefault();
  
                     currentWeather = Helper.GetWeatherEmote( currentWeatherEvent.weatherType.ToString(), true );
+
+                    
                            
                 }
 
@@ -104,8 +105,23 @@ namespace Server_Status
                 {
                     fields.Add( new Field() { name = "Day", value = currentSeason, inline = true } );
                 }
+                if ( !string.IsNullOrEmpty( currentTime ) )
+                {
+                    fields.Add( new Field() { name = "Time", value = currentTime, inline = true } );
+                }
 
-                fields.Add( new Field() { name = "Time", value = currentTime, inline = true } );
+                if ( forecast != null )
+                {
+                    var sb = new StringBuilder();
+
+                    foreach ( var item in forecast )
+                    {
+                        sb.AppendLine( string.Format( "{0}: {1}", item.Key, item.Value ) );
+                    }
+
+                    fields.Add( new Field() { name = "Forecast", value = sb.ToString(), inline = false } );
+
+                }
 
                 DiscordMessage message = new DiscordMessage();
                 message.username = "Server Status Update";
@@ -130,36 +146,6 @@ namespace Server_Status
                     Console.WriteLine( ex.Message );
                 }
             }
-        }
-
-        private static string GetForcastEmote( string forecast )
-        {
-            switch ( forecast )
-            {
-                case "0":
-                    return ":sunny:";
-                case "1":
-                    return ":partly_sunny:";
-                case "2":
-                    return ":cloud_snow:";
-                case "3":
-                    return ":white_sun_rain_cloud:";
-                case "4":
-                    return ":fog:";
-                case "5":
-                    return ":cloud:";
-                case "6":
-                    return ":thunder_cloud_rain:";
-                case "7":
-                    return ":cloud_snow:";
-                case "8":
-                    return ":fog:";
-                case "9":
-                    return ":thunder_cloud_rain:";
-                case "10":
-                    return ":thunder_cloud_rain:";
-            }
-            return forecast;
         }
     }
 
