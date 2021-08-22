@@ -1,0 +1,26 @@
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Server Status.exe
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Server Status.deps.json
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Server Status.runtimeconfig.json
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Server Status.runtimeconfig.dev.json
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Server Status.dll
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Server Status.pdb
+D:\Source\Repos\Server Status\obj\Debug\netcoreapp3.1\Server Status.csprojAssemblyReference.cache
+D:\Source\Repos\Server Status\obj\Debug\netcoreapp3.1\Server Status.AssemblyInfoInputs.cache
+D:\Source\Repos\Server Status\obj\Debug\netcoreapp3.1\Server Status.AssemblyInfo.cs
+D:\Source\Repos\Server Status\obj\Debug\netcoreapp3.1\Server Status.dll
+D:\Source\Repos\Server Status\obj\Debug\netcoreapp3.1\Server Status.pdb
+D:\Source\Repos\Server Status\obj\Debug\netcoreapp3.1\Server Status.genruntimeconfig.cache
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Newtonsoft.Json.dll
+D:\Source\Repos\Server Status\obj\Debug\netcoreapp3.1\Server Status.csproj.CopyComplete
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Microsoft.Extensions.Configuration.dll
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Microsoft.Extensions.Configuration.Abstractions.dll
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Microsoft.Extensions.Configuration.Binder.dll
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Microsoft.Extensions.Configuration.EnvironmentVariables.dll
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Microsoft.Extensions.Configuration.FileExtensions.dll
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Microsoft.Extensions.Configuration.Json.dll
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Microsoft.Extensions.FileProviders.Abstractions.dll
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Microsoft.Extensions.FileProviders.Physical.dll
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Microsoft.Extensions.FileSystemGlobbing.dll
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\Microsoft.Extensions.Primitives.dll
+D:\Source\Repos\Server Status\bin\Debug\netcoreapp3.1\System.Text.Json.dll
+D:\Source\Repos\Server Status\obj\Debug\netcoreapp3.1\Server Status.csproj.CoreCompileInputs.cache
